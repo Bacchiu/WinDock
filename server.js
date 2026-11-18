@@ -21,7 +21,7 @@ import { managedTls, tlsName } from "./src/managed-tls.js";
 import { secureSessionStore } from "./src/secure-sessions.js";
 import { pairingInvites } from "./src/pairing-invites.js";
 import { networkSetup } from "./src/network-setup.js";
-import { createUpdateService } from "./src/updates.js";
+import { createDisabledUpdates } from "./src/updates.js";
 import { createSyncHub } from "./src/sync.js";
 import { createInputHub } from "./src/input-hub.js";
 import { createTransfers, transferError } from "./src/transfers.js";
@@ -145,7 +145,7 @@ export async function createApp({
   trustLoopback = true,
   hostAllowed = createHostCheck(),
   hostName = hostname(),
-  updates = createUpdateService({ platform: provider.id }),
+  updates = createDisabledUpdates(),
   tls = null,
   securePin = newPin(),
   managed = null,

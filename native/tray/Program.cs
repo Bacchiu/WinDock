@@ -51,6 +51,7 @@ internal sealed partial class TrayApp : ApplicationContext
         { Timeout = TimeSpan.FromSeconds(12), MaxResponseContentBufferSize = 64 * 1024 };
     private readonly CancellationTokenSource _shutdown = new();
     private readonly System.Windows.Forms.Timer _updateTimer = new() { Interval = 8000 };
+    private static readonly bool HardenedNoUpdates = true;
     private ToolStripMenuItem _checkUpdates = null!, _downloadUpdate = null!;
     private bool _checkingUpdates, _startupCheckScheduled;
     private UpdateResult? _availableUpdate;
@@ -96,6 +97,8 @@ internal sealed partial class TrayApp : ApplicationContext
         _icon.ContextMenuStrip.Items.Add(new ToolStripSeparator());
         _checkUpdates = new ToolStripMenuItem("Check for updates…", null, async (_, _) => await CheckUpdates(true));
         _downloadUpdate = new ToolStripMenuItem("Download update…", null, (_, _) => OpenRelease(_availableUpdate?.ReleasePage)) { Visible = false };
+        // Hardened build: no upstream update checks; updates come from the owner's fork.
+        _checkUpdates.Visible = false;
         _icon.ContextMenuStrip.Items.Add(_checkUpdates);
         _icon.ContextMenuStrip.Items.Add(_downloadUpdate);
         _icon.ContextMenuStrip.Items.Add("Quit WinDock", null, async (_, _) => { if (await StopRecording()) ExitThread(); });
@@ -242,7 +245,7 @@ internal sealed partial class TrayApp : ApplicationContext
         if (!_smoke)
         {
             ShowBalloon("WinDock is running", $"{_endpoint}\nPIN {_pin}");
-            if (!_startupCheckScheduled) { _startupCheckScheduled = true; _updateTimer.Start(); }
+            _startupCheckScheduled = true; // Hardened build: no startup update check.
         }
     }
 
@@ -326,6 +329,7 @@ internal sealed partial class TrayApp : ApplicationContext
             try { await CheckUpdates(true); }
             finally { if (!updates.IsDisposed) updates.Enabled = true; }
         };
+        updates.Visible = false; // Hardened build: no upstream update checks.
         panel.Controls.Add(updates);
         var close = new Button { Text = "Close", AutoSize = true, Anchor = AnchorStyles.Right, DialogResult = DialogResult.Cancel };
         close.Click += (_, _) => form.Close(); panel.Controls.Add(close); form.CancelButton = close;
@@ -369,6 +373,7 @@ internal sealed partial class TrayApp : ApplicationContext
     private async Task CheckUpdates(bool interactive)
     {
         if (interactive) _updateTimer.Stop();
+        if (HardenedNoUpdates) return; // Hardened build: never contact the upstream release feed.
         if (_checkingUpdates || _stopping) return;
         _checkingUpdates = true;
         _checkUpdates.Enabled = false;

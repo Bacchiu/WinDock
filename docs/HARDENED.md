@@ -12,7 +12,13 @@ Questa branch rende WinDock più sicuro in due modi.
 
 Nota: il tray mostra ancora indirizzo e PIN della vecchia modalità. Su questa build non funzionano dal telefono: usa **Pair a phone securely**.
 
-## 2. Programmi compilati in modo verificabile
+## 2. Niente aggiornamenti dal progetto originale
+
+- Il PC non contatta mai il sito dell'autore originale: niente controllo aggiornamenti all'avvio, voce "Check for updates" nascosta nel tray.
+- Il dock e l'app Android non propongono più di scaricare l'APK o l'installer originali, che toglierebbero queste protezioni o non si installerebbero (firma diversa).
+- Per aggiornare: su GitHub premi **Sync fork**, unisci le novità nella branch `hardened`, lascia ricompilare il workflow e installa i nuovi file sopra quelli attuali.
+
+## 3. Programmi compilati in modo verificabile
 
 Il workflow `.github/workflows/build-hardened.yml` compila **dal codice di questa branch**:
 

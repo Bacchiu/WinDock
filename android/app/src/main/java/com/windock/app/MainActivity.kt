@@ -109,7 +109,8 @@ class MainActivity : Activity() {
         })
         appUpdates = AppUpdates(this)
         appearance = AppearancePreferences(getSharedPreferences("appearance", MODE_PRIVATE))
-        findViewById<Button>(R.id.app_updates).setOnClickListener { showUpdates() }
+        // Hardened build: updates come from the owner's fork, never from the upstream store or site.
+        findViewById<Button>(R.id.app_updates).visibility = View.GONE
         setupRemoteKeyboard()
         WindowCompat.setDecorFitsSystemWindows(window, false)
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.root)) { root, insets ->
@@ -464,8 +465,8 @@ class MainActivity : Activity() {
         @JavascriptInterface fun showPcPicker() { runOnUiThread { if (trustedKeyboardPage()) this@MainActivity.showPcPicker() } }
         @JavascriptInterface fun showConnectionSettings() { runOnUiThread { if (trustedKeyboardPage()) this@MainActivity.showConnectionSettings() } }
         @JavascriptInterface fun getAppVersion(): String = BuildConfig.VERSION_NAME
-        @JavascriptInterface fun showUpdates() { runOnUiThread { if (trustedKeyboardPage()) this@MainActivity.showUpdates() } }
-        @JavascriptInterface fun openPcRelease(version: String) { runOnUiThread { if (trustedKeyboardPage()) appUpdates.openPcRelease(version) } }
+        @JavascriptInterface fun showUpdates() { /* Disabled in the hardened build. */ }
+        @JavascriptInterface fun openPcRelease(version: String) { /* Disabled in the hardened build. */ }
         @JavascriptInterface fun showPhoneSettings() { runOnUiThread { if (trustedKeyboardPage()) showPhoneOptions() } }
     }
 

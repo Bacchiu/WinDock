@@ -1,6 +1,7 @@
 export function updateStatusText(result) {
   if (result.status === "current") return "You’re up to date.";
   if (result.status === "available") return "WinDock " + result.latestVersion + " is available.";
+  if (result.status === "disabled") return "Update checks are off in this build. Updates come from your own fork.";
   if (result.status === "failed") return "Couldn’t check for updates. Check your internet connection and try again.";
   return "Check for the latest release when you’re ready.";
 }
@@ -11,6 +12,7 @@ export function createUpdates({ api, get = id => document.getElementById(id), an
     get("updates-version").textContent = result.installedVersion ? "Installed on your PC: " + result.installedVersion : "Installed version unavailable";
     status.textContent = busy ? "Checking for updates…" : updateStatusText(result);
     check.disabled = busy;
+    check.hidden = result.status === "disabled";
     check.textContent = busy ? "Checking…" : "Check for updates";
     // Use the official download page instead of trusting a response-provided link.
     const version = result.latestVersion;
@@ -30,7 +32,8 @@ export function createUpdates({ api, get = id => document.getElementById(id), an
     if (typeof android?.openPcRelease === "function") { event.preventDefault(); android.openPcRelease(result.latestVersion); }
     else if (android) { event.preventDefault(); status.textContent = "Open windock.vercel.app on your PC to download the update."; }
   });
-  if (typeof android?.showUpdates === "function" && typeof android?.getAppVersion === "function") {
+  // Hardened build: the phone app's upstream update page is not offered.
+  if (false && typeof android?.showUpdates === "function" && typeof android?.getAppVersion === "function") {
     get("updates-android").hidden = false;
     get("updates-android-version").textContent = "Installed on this phone: " + android.getAppVersion();
     get("updates-android-check").addEventListener("click", () => android.showUpdates());

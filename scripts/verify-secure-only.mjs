@@ -44,6 +44,9 @@ function websocketStatus(path, headers) {
 try {
   // The PC itself keeps working over loopback (tray, pairing page, local browser).
   assert.equal((await call("/api/state")).status, 200, "loopback still works");
+  // Hardened build: the host never contacts the upstream release feed.
+  const updates = await call("/api/updates/check", { method: "POST", body: {} });
+  assert.equal(updates.json.status, "disabled", "update checks are disabled by default");
   // Discovery can still identify the PC.
   const health = await call("/health", { headers: { host: LAN } });
   assert.equal(health.status, 200);

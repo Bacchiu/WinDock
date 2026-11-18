@@ -41,6 +41,12 @@ export function parseUpdateManifest(manifest, installedVersion, platform) {
     installedVersion, latestVersion: version, releasePage: DOWNLOADS_PAGE_URL };
 }
 
+/** Hardened build: never contact the upstream release feed. Updates come from your own fork. */
+export function createDisabledUpdates({ installedVersion = INSTALLED_VERSION } = {}) {
+  const result = { status: "disabled", installedVersion };
+  return { state: () => ({ ...result }), check: () => Promise.resolve({ ...result }) };
+}
+
 // One bounded request per host, shared by concurrent clients. Only a manual check
 // contacts the public release feed. Never send a PIN, session, or PC address.
 export function createUpdateService({ installedVersion = INSTALLED_VERSION, platform = "windows",
