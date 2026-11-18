@@ -151,6 +151,9 @@ export async function createApp({
   managed = null,
   identity = null,
   transfers: suppliedTransfers = null,
+  // Hardened build: phones must use secure pairing (HTTPS). Plain HTTP stays
+  // available only on this PC (loopback) for the tray and the pairing page.
+  allowInsecure = process.env.WINDOCK_ALLOW_INSECURE === "1",
 } = {}) {
   if (!isValidPinShape(pin)) throw new Error("Pairing PIN must contain exactly six ASCII digits.");
   if (!isValidPinShape(securePin)) throw new Error("Secure pairing PIN must contain exactly six ASCII digits.");
@@ -161,7 +164,10 @@ export async function createApp({
   const invitations = pairingInvites();
   const permittedHost = (header) => Boolean(hostAllowed(header) || (managed && header?.split(":")[0] === tlsName(hostId)));
   // One host-wide failure budget and recovery action; independent transport credentials.
-  const requestAuth = (req) => permittedHost(req.headers.host) && authorize({ req,
+  const insecureRemote = (req) => !allowInsecure && !req.socket.encrypted &&
+    !(isLoopback(req.socket.remoteAddress || "") && isLoopbackHost(req.headers.host));
+  const requestAuth = (req) => insecureRemote(req) ? { ok: false, via: "secure-only", code: 403 } :
+    permittedHost(req.headers.host) && authorize({ req,
     sessions: req.socket.encrypted ? secureSessions : sessions,
     lockout, remote: req.socket.remoteAddress || "",
     trustLoopback: trustLoopback && !req.socket.encrypted,
@@ -223,6 +229,10 @@ export async function createApp({
     catch { return sendJson(res, 400, { error: "invalid request target" }); }
     const path = url.pathname;
     const local = isLoopback(remote) && isLoopbackHost(req.headers.host);
+    // /health only identifies the PC for discovery; everything else needs HTTPS.
+    if (path !== "/health" && insecureRemote(req)) {
+      return sendJson(res, 403, { error: "secure-only", message: "This WinDock accepts phones only through secure pairing. On the PC choose Pair a phone securely, then Scan computer code on the phone." });
+    }
 
     try {
       if (path === "/files" || path === "/files.html") {

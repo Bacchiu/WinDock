@@ -29,6 +29,11 @@
 
 ---
 
+> **Branch `hardened`:** phones connect only through secure pairing (HTTPS), and the
+> installer and a signed release APK are built from source by CI with provenance
+> attestations. See [docs/HARDENED.md](docs/HARDENED.md).
+
+
 ![A Windows desktop with WinDock running on a landscape phone beside the keyboard.](website/assets/windock-desktop.png)
 
 *WinDock at your desk — an AI-generated product illustration.*

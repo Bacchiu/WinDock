@@ -1,0 +1,132 @@
+name: Build hardened WinDock
+
+# Builds the PC installer and a signed *release* Android APK straight from this
+# branch's source, so what you install is provably what is in the repository.
+# Every file gets a GitHub build-provenance attestation you can check with:
+#   gh attestation verify <file> --repo <owner>/<repo>
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [hardened]
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - name: Verify native touchpad protocol and transparent signature rendering
+        run: dotnet run --project native/input-tests/WinDockInputTests.csproj -c Release
+      - name: Verify saved server port policy
+        run: dotnet run --project native/port-tests/WinDockPortTests.csproj -c Release
+      - name: Build bundled Windows app
+        shell: pwsh
+        run: ./scripts/build-windows.ps1
+      - name: Install verified installer compiler
+        shell: pwsh
+        run: ./scripts/install-inno.ps1
+      - name: Build setup program
+        shell: pwsh
+        run: ./scripts/build-installer.ps1
+      - name: Test install, launch, upgrade, and uninstall
+        shell: pwsh
+        run: ./scripts/test-installer.ps1
+      - name: Record checksum
+        shell: pwsh
+        run: |
+          $hash = (Get-FileHash artifacts/installer/WinDockSetup.exe -Algorithm SHA256).Hash
+          "### Windows installer`n`nSHA-256: ``$hash``" >> $env:GITHUB_STEP_SUMMARY
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: artifacts/installer/WinDockSetup.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windock-hardened-windows
+          path: artifacts/installer/WinDockSetup.exe
+          if-no-files-found: error
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    env:
+      KEYSTORE_B64: ${{ secrets.WINDOCK_KEYSTORE_B64 }}
+      WINDOCK_UPLOAD_STORE_PASSWORD: ${{ secrets.WINDOCK_KEYSTORE_PASSWORD }}
+      WINDOCK_UPLOAD_KEY_ALIAS: ${{ secrets.WINDOCK_KEY_ALIAS }}
+      WINDOCK_UPLOAD_KEY_PASSWORD: ${{ secrets.WINDOCK_KEY_PASSWORD }}
+      # Public fingerprint of your own signing certificate (not a secret).
+      WINDOCK_UPLOAD_CERT_SHA256: ${{ vars.WINDOCK_UPLOAD_CERT_SHA256 }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Check signing setup
+        run: |
+          missing=""
+          for name in KEYSTORE_B64 WINDOCK_UPLOAD_STORE_PASSWORD WINDOCK_UPLOAD_KEY_ALIAS WINDOCK_UPLOAD_KEY_PASSWORD WINDOCK_UPLOAD_CERT_SHA256; do
+            [ -n "${!name}" ] || missing="$missing $name"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Signing is not configured (missing:$missing). See docs/HARDENED.md."
+            exit 1
+          fi
+      - name: Restore keystore
+        run: |
+          echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/windock.jks"
+          echo "WINDOCK_UPLOAD_STORE_FILE=$RUNNER_TEMP/windock.jks" >> "$GITHUB_ENV"
+      - name: Prepare Android SDK
+        run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.1.0"'
+      - name: Build, test and sign the release APK
+        working-directory: android
+        # Release build: not debuggable, no WebView debugging, no cleartext HTTP,
+        # and it only connects to securely paired PCs (REQUIRE_SECURE_HOST).
+        run: bash ./gradlew verifyUploadSigning testReleaseUnitTest lintRelease assembleRelease -PwindockUploadSigning=true --no-daemon --console=plain
+      - name: Verify signature and record checksums
+        run: |
+          apk=android/app/build/outputs/apk/release/app-release.apk
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose --print-certs "$apk" | tee signer.txt
+          cert=$(grep -m1 'certificate SHA-256 digest' signer.txt | awk '{print toupper($NF)}')
+          expected=$(echo "$WINDOCK_UPLOAD_CERT_SHA256" | tr -d ': ' | tr a-f A-F)
+          [ "$cert" = "$expected" ] || { echo "::error::APK signed with an unexpected certificate"; exit 1; }
+          mkdir -p artifacts
+          cp "$apk" artifacts/WinDock-hardened.apk
+          {
+            echo "### Android APK (release)"
+            echo
+            echo "SHA-256: \`$(sha256sum artifacts/WinDock-hardened.apk | cut -d' ' -f1)\`"
+            echo
+            echo "Signing certificate SHA-256: \`$cert\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove keystore
+        if: always()
+        run: rm -f "$RUNNER_TEMP/windock.jks"
+      - uses: actions/attest-build-provenance@v3
+        with:
+          subject-path: artifacts/WinDock-hardened.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windock-hardened-android
+          path: artifacts/WinDock-hardened.apk
+          if-no-files-found: error

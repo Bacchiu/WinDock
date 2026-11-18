@@ -49,7 +49,7 @@ assert.match(pairingError({ error: "wrong pin", locked: true, global: false, ret
 assert.match(pairingError({ error: "locked", retryInMs: 1001 }), /2 second/);
 
 const lockout = createLockout({ maxFails: 100, globalMaxFails: 3 });
-const app = await createApp({ provider, configStore, pin: PIN, lockout, trustLoopback: true });
+const app = await createApp({ provider, configStore, pin: PIN, lockout, trustLoopback: true, allowInsecure: true });
 await new Promise((resolve) => app.server.listen(0, "127.0.0.1", resolve));
 const port = app.server.address().port;
 const base = "http://127.0.0.1:" + port;
