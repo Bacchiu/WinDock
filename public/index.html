@@ -60,6 +60,7 @@
     <button id="drawer-apps" type="button"><span data-icon="plus"></span><span>Apps</span></button>
     <button id="drawer-settings" type="button"><span data-icon="sun"></span><span>Appearance</span></button>
     <button id="drawer-edit" type="button"><span data-icon="edit"></span><span>Edit dock</span></button>
+    <button id="drawer-monitor" type="button"><span data-icon="gauge"></span><span>Monitor</span></button>
     <button id="drawer-updates" type="button"><span data-icon="updates"></span><span>Updates</span></button>
   </div>
   <div class="drawer-connection"><span id="drawer-host">Your PC</span><div class="drawer-connection-actions"><button id="drawer-switch-pc" type="button" hidden>Switch PC</button><button id="connection-open" type="button" hidden>Connection</button></div><span id="drawer-conn" data-state="off">Connecting</span></div>
@@ -226,6 +227,25 @@
     </section>
     <section id="updates-android" class="settings__card" hidden><h3>This Android phone</h3><p id="updates-android-version"></p><button id="updates-android-check" class="button" type="button">Check Android updates</button><p class="settings__tip">Android updates are installed separately from the PC app.</p></section>
   </div>
+</dialog>
+
+<dialog id="monitor" class="sheet monitor-sheet" aria-labelledby="monitor-title">
+  <div class="sheet-handle"></div>
+  <div class="sheet__heading"><div><p class="eyebrow">LIVE · YOUR PC</p><h2 id="monitor-title">Monitor</h2></div><button class="icon-button" type="button" data-close="monitor" aria-label="Close monitor"><span data-icon="close"></span></button></div>
+  <div class="monitor">
+    <section id="monitor-hero" class="monitor-hero" data-band="unknown" aria-live="polite">
+      <p id="monitor-gpu-name" class="monitor-hero__name">GPU temperature</p>
+      <p class="monitor-hero__temp"><span id="monitor-temp">–</span><span class="monitor-hero__unit">°C</span></p>
+      <p class="monitor-hero__meta"><strong id="monitor-band">Reading sensors…</strong><span id="monitor-fan"></span><span id="monitor-power"></span></p>
+      <canvas id="monitor-temp-chart" class="monitor-hero__chart" aria-hidden="true"></canvas>
+    </section>
+    <div class="monitor-cards">
+      <section class="monitor-card monitor-card--cpu"><div class="monitor-card__top"><div><h3>CPU</h3><p id="monitor-cpu-detail" class="monitor-card__detail"></p></div><strong id="monitor-cpu">–</strong></div><div id="monitor-cpu-bar" class="monitor-bar"></div><canvas id="monitor-cpu-chart" aria-hidden="true"></canvas></section>
+      <section class="monitor-card monitor-card--gpu"><div class="monitor-card__top"><div><h3>GPU</h3><p id="monitor-gpu-detail" class="monitor-card__detail"></p></div><strong id="monitor-gpu">–</strong></div><div id="monitor-gpu-bar" class="monitor-bar"></div><canvas id="monitor-gpu-chart" aria-hidden="true"></canvas></section>
+      <section class="monitor-card monitor-card--ram"><div class="monitor-card__top"><div><h3>RAM</h3><p id="monitor-ram-detail" class="monitor-card__detail"></p></div><strong id="monitor-ram">–</strong></div><div id="monitor-ram-bar" class="monitor-bar"></div><canvas id="monitor-ram-chart" aria-hidden="true"></canvas></section>
+    </div>
+  </div>
+  <p id="monitor-status" class="monitor-status" role="status"></p>
 </dialog>
 
 <dialog id="controls" class="sheet controls-curtain" aria-labelledby="controls-title">

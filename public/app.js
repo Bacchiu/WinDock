@@ -5,6 +5,7 @@ import { normalizeLayout, renderPages, pageCount, moveToTile } from "./launcher.
 import { createInputPad } from "./input-pad.js";
 import { pairingError } from "./pairing.js";
 import { createUpdates } from "./updates.js";
+import { createMonitor } from "./monitor.js";
 import { createNowPlayingPoller } from "./now-playing.js";
 import { dockFetch, DockWebSocket, nativeTransport } from "./native-transport.js";
 import { startGlass } from "./glass.js";
@@ -629,6 +630,8 @@ $("drawer-open").addEventListener("click", openDrawer);
 $("drawer-close").addEventListener("click", () => $("drawer").close());
 const updatesScreen = createUpdates({ api });
 $("drawer-updates").addEventListener("click", () => updatesScreen.open());
+const monitorScreen = createMonitor({ api });
+$("drawer-monitor").addEventListener("click", () => monitorScreen.open());
 $("settings-updates").addEventListener("click", () => updatesScreen.open());
 $("drawer-settings").addEventListener("click", openSettings);
 $("drawer-apps").addEventListener("click", () => { $("drawer").close(); openPicker(); });

@@ -24,6 +24,7 @@ const EXPECTED = {
   "verify-control.mjs": "control verification passed",
   "verify-pairing-security.mjs": "pairing-security verification passed",
   "verify-secure-only.mjs": "secure-only verification passed",
+  "verify-perf.mjs": "perf verification passed",
   "verify-auth.mjs": "auth verification passed",
   "verify-injection.mjs": "injection verification passed",
   "verify-discovery.mjs": "discovery verification passed",

@@ -22,6 +22,7 @@ import { secureSessionStore } from "./src/secure-sessions.js";
 import { pairingInvites } from "./src/pairing-invites.js";
 import { networkSetup } from "./src/network-setup.js";
 import { createDisabledUpdates } from "./src/updates.js";
+import { createPerfMonitor } from "./src/perf.js";
 import { createSyncHub } from "./src/sync.js";
 import { createInputHub } from "./src/input-hub.js";
 import { createTransfers, transferError } from "./src/transfers.js";
@@ -146,6 +147,7 @@ export async function createApp({
   hostAllowed = createHostCheck(),
   hostName = hostname(),
   updates = createDisabledUpdates(),
+  perf = createPerfMonitor(),
   tls = null,
   securePin = newPin(),
   managed = null,
@@ -529,6 +531,9 @@ export async function createApp({
         return sendJson(res, 200, await provider.capture[captureActions[path]]());
       }
 
+      if (path === "/api/perf" && req.method === "GET") {
+        return sendJson(res, 200, perf.snapshot());
+      }
       if (path === "/api/stats" && req.method === "GET") {
         return sendJson(res, 200, await provider.systemStats().catch(() => ({})));
       }
@@ -579,8 +584,8 @@ export async function createApp({
     }), 6 * 60 * 60000);
     renewalTimer.unref();
   }
-  server.on("close", () => { transferPromise?.then(t=>t.close()).catch(()=>{}); clearInterval(renewalTimer); managedServer?.close(); provider.capture?.dispose().catch(() => {}); provider.input?.dispose(); });
-  return { server, secureServer, managedServer, managed, hub, inputHub, provider, configStore, dockState, state, sessions, secureSessions, lockout };
+  server.on("close", () => { transferPromise?.then(t=>t.close()).catch(()=>{}); clearInterval(renewalTimer); managedServer?.close(); provider.capture?.dispose().catch(() => {}); provider.input?.dispose(); perf.stop(); });
+  return { server, secureServer, managedServer, managed, hub, inputHub, provider, configStore, dockState, state, sessions, secureSessions, lockout, perf };
 }
 
 export async function start({ port, securePort, managedPort, managedHttps = true, host = process.env.WINDOCK_HOST || "", discoveryPort = DISCOVERY_PORT, ...appOptions } = {}) {
